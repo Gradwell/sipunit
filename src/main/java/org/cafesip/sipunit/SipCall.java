@@ -2952,7 +2952,21 @@ public class SipCall implements SipActionObject, MessageListener
 			return null;
 		}
 	}
-
+	
+	public boolean disconnect(String body, String contentType,
+			String contentSubType, ArrayList<String> additionalHeaders,
+			ArrayList<String> replaceHeaders)
+	{
+		SipTransaction siptrans = sendDisconnect(body, contentType, contentSubType,
+			additionalHeaders, replaceHeaders);
+		
+		if (siptrans == null) {
+			return false;
+		}
+		
+		return true;
+	}
+	
 	/**
 	 * This method is the same as the basic disconnect() method except that it
 	 * allows the caller to specify a message body and/or additional message

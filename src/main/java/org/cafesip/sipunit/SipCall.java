@@ -2850,6 +2850,14 @@ public class SipCall implements SipActionObject, MessageListener
 		return true;
 	}
 
+	public boolean disconnect()
+	{
+		if (sendDisconnect() == null) {
+			return false;
+		}
+		return true;
+	}
+	
 	/**
 	 * This method sends a basic BYE message. It incorporates required
 	 * authorization headers that have previously been accumulated during the
@@ -2858,9 +2866,9 @@ public class SipCall implements SipActionObject, MessageListener
 	 * 
 	 * @return true if the message was successfully sent, false otherwise.
 	 */
-	public boolean disconnect()
+	public SipTransaction sendDisconnect()
 	{
-		return disconnect(null, null, null);
+		return sendDisconnect(null, null, null);
 	}
 
 	/**
@@ -2895,7 +2903,7 @@ public class SipCall implements SipActionObject, MessageListener
 	 *            for this body to be included in the message. Use null for no
 	 *            body bytes.
 	 */
-	public boolean disconnect(ArrayList<Header> additionalHeaders,
+	public SipTransaction sendDisconnect(ArrayList<Header> additionalHeaders,
 			ArrayList<Header> replaceHeaders, String body)
 	{
 		initErrorInfo();
@@ -2907,7 +2915,7 @@ public class SipCall implements SipActionObject, MessageListener
 					.get(new Integer(returnCode))
 					+ " - dialog hasn't been established";
 
-			return false;
+			return null;
 		}
 
 		try
@@ -2924,14 +2932,14 @@ public class SipCall implements SipActionObject, MessageListener
 
 			if (transaction != null)
 			{
-				return true;
+				return transaction;
 			}
 
 			setReturnCode(parent.getReturnCode());
 			setErrorMessage(parent.getErrorMessage());
 			setException(parent.getException());
 
-			return false;
+			return null;
 
 		}
 		catch (Exception ex)
@@ -2941,7 +2949,7 @@ public class SipCall implements SipActionObject, MessageListener
 			setErrorMessage("Exception: " + ex.getClass().getName() + ": "
 					+ ex.getMessage());
 
-			return false;
+			return null;
 		}
 	}
 
@@ -2993,13 +3001,14 @@ public class SipCall implements SipActionObject, MessageListener
 	 *            null for no replacement of message headers.
 	 * 
 	 */
-	public boolean disconnect(String body, String contentType,
+	public SipTransaction sendDisconnect(String body, String contentType,
 			String contentSubType, ArrayList<String> additionalHeaders,
 			ArrayList<String> replaceHeaders)
 	{
+		SipTransaction ret = null;
 		try
 		{
-			return disconnect(parent.toHeader(additionalHeaders, contentType,
+			ret = sendDisconnect(parent.toHeader(additionalHeaders, contentType,
 					contentSubType), parent.toHeader(replaceHeaders), body);
 		}
 		catch (Exception ex)
@@ -3008,8 +3017,8 @@ public class SipCall implements SipActionObject, MessageListener
 			setErrorMessage("Exception: " + ex.getClass().getName() + ": "
 					+ ex.getMessage());
 			setReturnCode(SipSession.EXCEPTION_ENCOUNTERED);
-			return false;
 		}
+		return ret;
 	}
 
 	/**
@@ -4272,6 +4281,76 @@ public class SipCall implements SipActionObject, MessageListener
 		Response resp = ((ResponseEvent) response_event).getResponse();
 		receivedResponses.add(new SipResponse((ResponseEvent) response_event));
 		SipStack.trace("CANCEL response received: " + resp.toString());
+
+		setReturnCode(resp.getStatusCode());
+
+		return true;
+	}
+
+	/**
+	 * The waitForDisconnectResponse() method waits for a response to be received
+	 * from the network for a sent BYE. Call this method after calling
+	 * sendDisconnect().
+	 * <p>
+	 * This method blocks until one of the following occurs: 1) A response
+	 * message has been received. In this case, a value of true is returned.
+	 * Call the getLastReceivedResponse() method to get the response details. 2)
+	 * A timeout occurs. A false value is returned in this case. 3) An error
+	 * occurs. False is returned in this case.
+	 * <p>
+	 * Regardless of the outcome, getReturnCode() can be called after this
+	 * method returns to get the status code: IE, the SIP response code received
+	 * from the network (defined in SipResponse, along with the corresponding
+	 * textual equivalent) or a SipUnit internal status/error code (defined in
+	 * SipSession, along with the corresponding textual equivalent). SipUnit
+	 * internal codes are in a specially designated range
+	 * (SipSession.SIPUNIT_INTERNAL_RETURNCODE_MIN and upward).
+	 * <p>
+	 * 
+	 * @param siptrans
+	 *            This is the object that was returned by method sendDisconnect().
+	 *            It identifies a specific Disconnect transaction.
+	 * @param timeout
+	 *            The maximum amount of time to wait, in milliseconds. Use a
+	 *            value of 0 to wait indefinitely.
+	 * @return true if a response was received - in that case, call
+	 *         getReturnCode() to get the status code that was contained in the
+	 *         received response, and/or call getLastReceivedResponse() to see
+	 *         the response details. Returns false if timeout or error.
+	 */
+	public boolean waitForDisconnectResponse(SipTransaction siptrans, long timeout)
+	{
+		initErrorInfo();
+
+		if (siptrans == null)
+		{
+			returnCode = SipSession.INVALID_OPERATION;
+			errorMessage = (String) SipSession.statusCodeDescription
+					.get(new Integer(returnCode))
+					+ " - no transaction object given";
+			return false;
+		}
+
+		EventObject response_event = parent.waitResponse(siptrans, timeout);
+
+		if (response_event == null)
+		{
+			setErrorMessage(parent.getErrorMessage());
+			setException(parent.getException());
+			setReturnCode(parent.getReturnCode());
+			return false;
+		}
+
+		if (response_event instanceof TimeoutEvent == true)
+		{
+			setReturnCode(SipPhone.TIMEOUT_OCCURRED);
+			setErrorMessage("A Timeout Event was received");
+			return false;
+		}
+
+		Response resp = ((ResponseEvent) response_event).getResponse();
+		receivedResponses.add(new SipResponse((ResponseEvent) response_event));
+		SipStack.trace("Gradwell BYE response received: " + resp.toString());
 
 		setReturnCode(resp.getStatusCode());
 

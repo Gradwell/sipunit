@@ -279,7 +279,7 @@
 									</classpath>
 								</taskdef>
 								<xjc extension="true" schema="${basedir}/conf/presence-pidf.xsd"
-									binding="${basedir}/conf/jaxb-bindings.xsd" target="${project.build.sourceDirectory}"
+									binding="${basedir}/conf/jaxb-bindings.xsd" destdir="${project.build.sourceDirectory}"
 									package="org.cafesip.sipunit.presenceparser.pidf" />
 							</target>
 						</configuration>

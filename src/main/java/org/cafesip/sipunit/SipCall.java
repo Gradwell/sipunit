@@ -4364,7 +4364,7 @@ public class SipCall implements SipActionObject, MessageListener
 
 		Response resp = ((ResponseEvent) response_event).getResponse();
 		receivedResponses.add(new SipResponse((ResponseEvent) response_event));
-		SipStack.trace("Gradwell BYE response received: " + resp.toString());
+		SipStack.trace("BYE response received: " + resp.toString());
 
 		setReturnCode(resp.getStatusCode());
 

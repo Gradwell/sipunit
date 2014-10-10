@@ -448,13 +448,14 @@ public class SipSession implements SipListener, SipActionObject
             {
                 SipStack
                         .trace("     skipping 'To' check, we're not loopback (see setLoopback())");
-                return;
             }
-
-            // check 'To' for a match
-            if (to.getAddress().getURI().toString().equals(me) == false)
+            else
             {
-                return;
+                // check 'To' for a match
+                if (to.getAddress().getURI().toString().equals(me) == false)
+                {
+                    return;
+                }
             }
         }
 

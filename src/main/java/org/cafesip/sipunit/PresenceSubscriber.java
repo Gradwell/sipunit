@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Calendar;
 
 import javax.sip.header.AcceptHeader;
 import javax.sip.header.ContentTypeHeader;
@@ -33,6 +34,7 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.ValidationEvent;
 import javax.xml.bind.ValidationEventHandler;
+import javax.xml.datatype.XMLGregorianCalendar;
 
 import org.cafesip.sipunit.presenceparser.pidf.Contact;
 import org.cafesip.sipunit.presenceparser.pidf.Note;
@@ -210,9 +212,11 @@ public class PresenceSubscriber extends EventSubscriber
                 while (i.hasNext())
                 {
                     Tuple t = (Tuple) i.next();
+                    XMLGregorianCalendar gregCal = t.getTimestamp();
+                    Calendar cvtTs = gregCal.toGregorianCalendar();
 
                     PresenceDeviceInfo dev = new PresenceDeviceInfo();
-                    dev.setBasicStatus(t.getStatus().getBasic());
+                    dev.setBasicStatus(t.getStatus().getBasic().toString());
 
                     Contact contact = t.getContact();
                     if (contact != null)
@@ -228,7 +232,7 @@ public class PresenceSubscriber extends EventSubscriber
                     dev.setDeviceExtensions(t.getAny());
                     dev.setId(t.getId());
                     dev.setStatusExtensions(t.getStatus().getAny());
-                    dev.setTimestamp(t.getTimestamp());
+                    dev.setTimestamp(cvtTs);
 
                     ArrayList<PresenceNote> notes = new ArrayList<PresenceNote>();
                     if (t.getNote() != null)

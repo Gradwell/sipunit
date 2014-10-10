@@ -47,6 +47,8 @@ import javax.sip.header.RecordRouteHeader;
 import javax.sip.header.RouteHeader;
 import javax.sip.message.MessageFactory;
 
+import org.apache.log4j.Logger;
+
 /**
  * This class is the starting point for a SipUnit test. Before establishing any
  * SIP sessions, the test program must instantiate this class. Each SipStack
@@ -63,6 +65,8 @@ import javax.sip.message.MessageFactory;
  */
 public class SipStack implements SipListener
 {
+    static Logger log = null;
+
     private static boolean traceEnabled = false;
 
     private static SipFactory sipFactory = null;
@@ -134,6 +138,16 @@ public class SipStack implements SipListener
     public static final int DEFAULT_PORT = 5060;
 
     public static final String DEFAULT_PROTOCOL = PROTOCOL_UDP;
+
+    /**
+     * This constructor is a wrapper around the usual constructor,
+     * which allows an additional logging object to be passed.
+     */
+    public SipStack(String proto, int port, Properties props, Logger log) throws Exception
+    {
+        this(proto, port, props);
+        SipStack.log = log;
+    }
 
     /**
      * A constructor for this class. Before establishing any SIP sessions,
@@ -529,8 +543,12 @@ public class SipStack implements SipListener
     {
         if (traceEnabled)
         {
-            System.out.println("SIPUNIT TRACE:  " + System.currentTimeMillis()
+            if (log == null) {
+                System.out.println("SIPUNIT TRACE:  " + System.currentTimeMillis()
                     + "  " + msg);
+            } else {
+                log.trace("SIPUNIT TRACE\t" + msg);
+            }
         }
     }
 
